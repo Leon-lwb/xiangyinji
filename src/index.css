@@ -24,32 +24,11 @@ html, body {
 }
 
 /* ============================================
-   双视频 Crossfade 交叉淡化 — 10秒循环
-   时间轴：
-   0-4s (0%-40%):  A可见，B隐藏
-   4-5s (40%-50%): 交叉淡化 A→B
-   5-9s (50%-90%): B可见，A隐藏
-   9-10s (90%-100%): 交叉淡化 B→A
+   双视频 Crossfade — 点击触发（非自动循环）
+   初始：Video A 可见(opacity:1)，Video B 隐藏(opacity:0)
+   点击"聆听乡音"后：音频播放完毕 → JS 切换 showVideoB 状态
+   → CSS transition 1.5s 完成交叉淡化
    ============================================ */
-@keyframes fade-a {
-  0%, 40%  { opacity: 1; }
-  50%, 90% { opacity: 0; }
-  100%     { opacity: 1; }
-}
-
-@keyframes fade-b {
-  0%, 40%  { opacity: 0; }
-  50%, 90% { opacity: 1; }
-  100%     { opacity: 0; }
-}
-
-.video-a {
-  animation: fade-a 10s ease-in-out infinite;
-}
-
-.video-b {
-  animation: fade-b 10s ease-in-out infinite;
-}
 
 /* ============================================
    Ken Burns 慢推运镜
@@ -151,12 +130,6 @@ html, body {
   .ken-burns-a,
   .ken-burns-b {
     animation: none !important;
-  }
-  .video-a {
-    animation: fade-a 10s ease-in-out infinite !important;
-  }
-  .video-b {
-    animation: fade-b 10s ease-in-out infinite !important;
   }
   .animate-fade-rise,
   .animate-fade-rise-delay,

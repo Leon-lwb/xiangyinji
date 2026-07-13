@@ -3,118 +3,129 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 /**
  * 乡音记 · 沉浸式双视频 Crossfade 首页
  *
- * 核心体验：
- * - 两段视频通过 CSS @keyframes 交叉溶解，10秒无限循环
- * - 在 Crossfade 过渡瞬间（第4秒），自动触发收音机音效
- * - CTA 按钮"聆听乡音"可手动触发音频播放 + 重启动画同步
+ * 交互逻辑（每次点击触发一次）：
+ * 1. 初始状态：Video A 可见（老人背影），Video B 隐藏
+ * 2. 用户点击"聆听乡音"
+ * 3. 播放 radio-voice.mp3（"原来你在这儿"）
+ * 4. 音频播放完毕后，交叉淡化到 Video B（年轻小伙在金色稻田）
+ * 5. Video B 显示数秒后，淡回 Video A
+ * 6. 等待下一次点击
  */
 
-const CYCLE_DURATION = 10000 // 10秒循环周期
-const AUDIO_TRIGGER_TIME = 4000 // 第4秒触发音频（Crossfade起点）
+const VIDEO_B_DISPLAY_MS = 5000 // Video B 显示时长
+const CROSSFADE_MS = 1500 // 交叉淡化时长
 
 export default function App() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const videoARef = useRef<HTMLVideoElement>(null)
   const videoBRef = useRef<HTMLVideoElement>(null)
   const [scrolled, setScrolled] = useState(false)
-  const [audioReady, setAudioReady] = useState(false)
+  const [showVideoB, setShowVideoB] = useState(false)
+  const [isTriggering, setIsTriggering] = useState(false)
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   /* ============================================
-     自动音频触发 — 在 Crossfade 瞬间播放收音机音效
+     清理所有定时器
      ============================================ */
+  const clearAllTimers = useCallback(() => {
+    timersRef.current.forEach((t) => clearTimeout(t))
+    timersRef.current = []
+  }, [])
+
   useEffect(() => {
-    let elapsed = 0
-    let intervalId: ReturnType<typeof setInterval>
-
-    const startTrigger = () => {
-      intervalId = setInterval(() => {
-        elapsed += 100
-        if (elapsed >= AUDIO_TRIGGER_TIME) {
-          // 到达 Crossfade 点，播放音频
-          if (audioRef.current && audioReady) {
-            audioRef.current.currentTime = 0
-            audioRef.current.play().catch(() => {
-              // 浏览器自动播放策略阻止时，静默失败
-            })
-          }
-          // 重置计时，下一个循环再次触发
-          elapsed = 0
-        }
-      }, 100)
-    }
-
-    startTrigger()
-    return () => clearInterval(intervalId)
-  }, [audioReady])
+    return () => clearAllTimers()
+  }, [clearAllTimers])
 
   /* ============================================
-     滚动监听 — 控制导航栏透明度
+     滚动监听
      ============================================ */
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 80)
-    }
+    const handleScroll = () => setScrolled(window.scrollY > 80)
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   /* ============================================
-     手动触发 — 点击 CTA 按钮
+     核心交互：点击"聆听乡音"
      ============================================ */
   const handleTriggerMemory = useCallback(() => {
-    // 1. 播放音频
+    if (isTriggering) return // 正在播放中，忽略重复点击
+    setIsTriggering(true)
+    clearAllTimers()
+
+    // 1. 播放收音机音效
     if (audioRef.current) {
       audioRef.current.currentTime = 0
       audioRef.current.play().catch(() => {})
     }
 
-    // 2. 重启 CSS 动画，使交叉淡化从 A 开始重新循环
-    const videos = [videoARef.current, videoBRef.current]
-    videos.forEach((v) => {
-      if (!v) return
-      // 移除动画 class，强制 reflow，再重新添加
-      v.classList.remove('video-a', 'video-b', 'ken-burns-a', 'ken-burns-b')
-      void v.offsetWidth // 强制 reflow
-      v.classList.add(v === videoARef.current ? 'video-a' : 'video-b')
-      v.classList.add(v === videoARef.current ? 'ken-burns-a' : 'ken-burns-b')
-    })
-
-    // 3. TTS 播放方言 "原来你在这儿"
-    if (window.speechSynthesis) {
-      const utter = new SpeechSynthesisUtterance('原来你在这儿')
-      utter.lang = 'zh-CN'
-      utter.rate = 0.85
-      utter.pitch = 1.1
-      window.speechSynthesis.cancel()
-      window.speechSynthesis.speak(utter)
+    // 2. 确保 Video A 正在播放（老人背影）
+    if (videoARef.current) {
+      videoARef.current.play().catch(() => {})
     }
-  }, [])
+
+    // 3. 音频播放完毕后，触发交叉淡化到 Video B
+    const triggerCrossfade = () => {
+      // 确保 Video B 从头播放
+      if (videoBRef.current) {
+        videoBRef.current.currentTime = 0
+        videoBRef.current.play().catch(() => {})
+      }
+      // 切换到 Video B
+      setShowVideoB(true)
+
+      // 4. Video B 显示一段时间后，淡回 Video A
+      const fadeBack = setTimeout(() => {
+        setShowVideoB(false)
+        // 等淡化完成后重置状态
+        const reset = setTimeout(() => {
+          setIsTriggering(false)
+          timersRef.current = timersRef.current.filter((t) => t !== reset)
+        }, CROSSFADE_MS + 200)
+        timersRef.current.push(reset)
+        timersRef.current = timersRef.current.filter((t) => t !== fadeBack)
+      }, VIDEO_B_DISPLAY_MS + CROSSFADE_MS)
+      timersRef.current.push(fadeBack)
+    }
+
+    // 监听音频结束，或使用超时兜底
+    const audio = audioRef.current
+    if (audio) {
+      const onEnded = () => {
+        audio.removeEventListener('ended', onEnded)
+        // 短暂延迟，让"转头"动作有时间
+        const delay = setTimeout(triggerCrossfade, 500)
+        timersRef.current.push(delay)
+      }
+      audio.addEventListener('ended', onEnded)
+
+      // 兜底：如果音频事件未触发，8秒后强制交叉淡化
+      const fallback = setTimeout(() => {
+        audio.removeEventListener('ended', onEnded)
+        triggerCrossfade()
+      }, 8000)
+      timersRef.current.push(fallback)
+    } else {
+      // 没有音频，直接交叉淡化
+      triggerCrossfade()
+    }
+  }, [isTriggering, clearAllTimers])
 
   /* ============================================
-     音频加载就绪
+     渲染
      ============================================ */
-  const handleAudioCanPlay = useCallback(() => {
-    setAudioReady(true)
-  }, [])
-
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-cinema-bg text-cinema-fg">
       {/* ==================== 导航栏 ==================== */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
-            ? 'bg-black/40 backdrop-blur-xl'
-            : 'bg-transparent'
+          scrolled ? 'bg-black/40 backdrop-blur-xl' : 'bg-transparent'
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-6">
-          {/* Logo */}
           <div className="font-serif text-3xl font-bold tracking-tight text-cinema-fg">
-            归田记
-            <sup className="ml-0.5 text-xs">®</sup>
+            归田记<sup className="ml-0.5 text-xs">®</sup>
           </div>
-
-          {/* Nav links */}
           <div className="hidden items-center gap-8 md:flex">
             {[
               { label: '故乡', active: true },
@@ -134,8 +145,6 @@ export default function App() {
               </a>
             ))}
           </div>
-
-          {/* CTA */}
           <button
             onClick={handleTriggerMemory}
             className="liquid-glass rounded-full px-6 py-2.5 text-sm text-cinema-fg transition-transform hover:scale-[1.03]"
@@ -150,7 +159,11 @@ export default function App() {
         {/* Video A — 现在：客厅望阳台（老张背影） */}
         <video
           ref={videoARef}
-          className="video-a ken-burns-a absolute inset-0 z-0 h-full w-full object-cover"
+          className="ken-burns-a cinema-video absolute inset-0 z-0 h-full w-full object-cover"
+          style={{
+            opacity: showVideoB ? 0 : 1,
+            transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
+          }}
           autoPlay
           loop
           muted
@@ -163,7 +176,11 @@ export default function App() {
         {/* Video B — 过去：金色稻田（年轻面庞微笑） */}
         <video
           ref={videoBRef}
-          className="video-b ken-burns-b absolute inset-0 z-0 h-full w-full object-cover"
+          className="ken-burns-b cinema-video absolute inset-0 z-0 h-full w-full object-cover"
+          style={{
+            opacity: showVideoB ? 1 : 0,
+            transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
+          }}
           autoPlay
           loop
           muted
@@ -184,14 +201,18 @@ export default function App() {
 
         {/* 内容层 */}
         <div className="relative z-20 flex h-full flex-col items-center justify-center px-6 text-center">
-          <h1 className="animate-fade-rise font-serif text-5xl font-normal leading-[0.95] tracking-[-0.02em] text-cinema-fg sm:text-7xl md:text-8xl"
-              style={{ textShadow: '0 2px 30px rgba(0,0,0,0.5)' }}>
+          <h1
+            className="animate-fade-rise font-serif text-5xl font-normal leading-[0.95] tracking-[-0.02em] text-cinema-fg sm:text-7xl md:text-8xl"
+            style={{ textShadow: '0 2px 30px rgba(0,0,0,0.5)' }}
+          >
             一声<em className="not-italic text-cinema-primary">乡音</em>，
             恍若<em className="not-italic text-cinema-primary">隔世</em>。
           </h1>
 
-          <p className="animate-fade-rise-delay mt-8 max-w-2xl text-base leading-relaxed text-cinema-muted sm:text-lg"
-             style={{ textShadow: '0 1px 10px rgba(0,0,0,0.6)' }}>
+          <p
+            className="animate-fade-rise-delay mt-8 max-w-2xl text-base leading-relaxed text-cinema-muted sm:text-lg"
+            style={{ textShadow: '0 1px 10px rgba(0,0,0,0.6)' }}
+          >
             客厅的收音机还在沙沙作响，风里却传来了五十年前的声音。
             <br />
             回头望去，阳台变成了无边的稻田，而你，还是十八岁的模样。
@@ -199,7 +220,10 @@ export default function App() {
 
           <button
             onClick={handleTriggerMemory}
-            className="liquid-glass animate-fade-rise-delay-2 mt-12 flex items-center gap-2.5 rounded-full px-14 py-5 text-base text-cinema-fg transition-transform hover:scale-[1.03] cursor-pointer"
+            disabled={isTriggering}
+            className={`liquid-glass animate-fade-rise-delay-2 mt-12 flex items-center gap-2.5 rounded-full px-14 py-5 text-base text-cinema-fg transition-transform hover:scale-[1.03] cursor-pointer ${
+              isTriggering ? 'opacity-60 cursor-wait' : ''
+            }`}
             style={{ textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
           >
             <svg
@@ -212,7 +236,7 @@ export default function App() {
             >
               <path d="M128,176a48,48,0,0,0,48-48V64a48,48,0,0,0-96,0v64A48,48,0,0,0,128,176ZM96,64a32,32,0,0,1,64,0v64a32,32,0,0,1-64,0Zm40,203.6V240h16a8,8,0,0,0,0-16H104a8,8,0,0,0,0,16h16v27.6A80.11,80.11,0,0,0,48,320a8,8,0,0,0,16,0,64.07,64.07,0,0,1,63.5-63.99c.17,0,.33.05.5.05s.33-.05.5-.05A64.07,64.07,0,0,1,192,320a8,8,0,0,0,16,0A80.11,80.11,0,0,0,136,267.6Z" />
             </svg>
-            <span>聆听乡音</span>
+            <span>{isTriggering ? '播放中…' : '聆听乡音'}</span>
           </button>
         </div>
 
@@ -252,7 +276,6 @@ export default function App() {
             从一声乡音开始，找回岁月里的温暖。
           </p>
 
-          {/* 四大模块 */}
           <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2">
             {[
               { title: '乡音互通', desc: '全方言高容错语音交互，老人说方言，AI自动翻译成普通话文字给子女看。' },
@@ -264,7 +287,10 @@ export default function App() {
                 key={mod.title}
                 className="group relative rounded-2xl border border-[#e8e2d8] bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
               >
-                <div className="absolute inset-[5px] rounded-xl border border-[#f0ebe2] opacity-60 transition-opacity group-hover:opacity-100" style={{ pointerEvents: 'none' }} />
+                <div
+                  className="absolute inset-[5px] rounded-xl border border-[#f0ebe2] opacity-60 transition-opacity group-hover:opacity-100"
+                  style={{ pointerEvents: 'none' }}
+                />
                 <div className="relative z-10">
                   <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-[#fdf5e0] font-serif text-2xl font-bold text-[#b8860b]">
                     {i + 1}
@@ -294,9 +320,10 @@ export default function App() {
           </p>
           <button
             onClick={handleTriggerMemory}
-            className="rounded-xl bg-[#b8860b] px-8 py-4 text-base font-semibold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-[#9a7309] hover:shadow-xl"
+            disabled={isTriggering}
+            className="rounded-xl bg-[#b8860b] px-8 py-4 text-base font-semibold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-[#9a7309] hover:shadow-xl disabled:opacity-60 disabled:cursor-wait"
           >
-            聆听乡音
+            {isTriggering ? '播放中…' : '聆听乡音'}
           </button>
         </div>
       </section>
@@ -307,12 +334,7 @@ export default function App() {
       </footer>
 
       {/* ==================== 音频元素 ==================== */}
-      <audio
-        ref={audioRef}
-        src="/assets/radio-voice.mp3"
-        onCanPlay={handleAudioCanPlay}
-        preload="auto"
-      />
+      <audio ref={audioRef} src="/assets/radio-voice.mp3" preload="auto" />
     </div>
   )
 }
