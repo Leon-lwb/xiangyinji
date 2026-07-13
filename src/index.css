@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   全局基础
+   ============================================ */
+:root {
+  font-family: 'Noto Sans SC', sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  background: hsl(25, 30%, 8%);
+}
+
+/* ============================================
+   双视频 Crossfade 交叉淡化 — 10秒循环
+   时间轴：
+   0-4s (0%-40%):  A可见，B隐藏
+   4-5s (40%-50%): 交叉淡化 A→B
+   5-9s (50%-90%): B可见，A隐藏
+   9-10s (90%-100%): 交叉淡化 B→A
+   ============================================ */
+@keyframes fade-a {
+  0%, 40%  { opacity: 1; }
+  50%, 90% { opacity: 0; }
+  100%     { opacity: 1; }
+}
+
+@keyframes fade-b {
+  0%, 40%  { opacity: 0; }
+  50%, 90% { opacity: 1; }
+  100%     { opacity: 0; }
+}
+
+.video-a {
+  animation: fade-a 10s ease-in-out infinite;
+}
+
+.video-b {
+  animation: fade-b 10s ease-in-out infinite;
+}
+
+/* ============================================
+   Ken Burns 慢推运镜
+   ============================================ */
+@keyframes ken-burns-a {
+  0%   { transform: scale(1.05) translate(0%, 0%); }
+  100% { transform: scale(1.15) translate(-2%, 2%); }
+}
+
+@keyframes ken-burns-b {
+  0%   { transform: scale(1.1) translate(0%, 0%); }
+  100% { transform: scale(1.2) translate(2%, -1%); }
+}
+
+.ken-burns-a {
+  animation: ken-burns-a 20s ease-in-out infinite alternate;
+}
+
+.ken-burns-b {
+  animation: ken-burns-b 20s ease-in-out infinite alternate;
+}
+
+/* ============================================
+   入场动画
+   ============================================ */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-rise {
+  animation: fade-rise 1s ease-out both;
+}
+
+.animate-fade-rise-delay {
+  animation: fade-rise 1s ease-out 0.3s both;
+}
+
+.animate-fade-rise-delay-2 {
+  animation: fade-rise 1s ease-out 0.6s both;
+}
+
+/* ============================================
+   滚动提示箭头脉冲
+   ============================================ */
+@keyframes scroll-pulse {
+  0%, 100% { opacity: 0.4; transform: scaleY(1); }
+  50%      { opacity: 1; transform: scaleY(1.2); }
+}
+
+.scroll-pulse {
+  animation: scroll-pulse 2s ease-in-out infinite;
+}
+
+/* ============================================
+   液态玻璃效果
+   ============================================ */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px) saturate(1.2);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12),
+              0 4px 16px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ============================================
+   prefers-reduced-motion — 禁用运镜，保留交叉淡化
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  .ken-burns-a,
+  .ken-burns-b {
+    animation: none !important;
+  }
+  .video-a {
+    animation: fade-a 10s ease-in-out infinite !important;
+  }
+  .video-b {
+    animation: fade-b 10s ease-in-out infinite !important;
+  }
+  .animate-fade-rise,
+  .animate-fade-rise-delay,
+  .animate-fade-rise-delay-2 {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .scroll-pulse {
+    animation: none;
+  }
+}
