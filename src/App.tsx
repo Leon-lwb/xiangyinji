@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { Routes, Route, useNavigate, useLocation, Link } from 'react-router-dom'
+import DialectPage from './pages/DialectPage'
+import MemoryPage from './pages/MemoryPage'
+import FriendsPage from './pages/FriendsPage'
+import HealthPage from './pages/HealthPage'
 
 /**
  * 乡音记 · 沉浸式双视频 Crossfade 首页
@@ -19,6 +24,9 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const videoARef = useRef<HTMLVideoElement>(null)
   const videoBRef = useRef<HTMLVideoElement>(null)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const isHome = location.pathname === '/'
   const [scrolled, setScrolled] = useState(false)
   const [showVideoB, setShowVideoB] = useState(false)
   const [isTriggering, setIsTriggering] = useState(false)
@@ -123,26 +131,28 @@ export default function App() {
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-6">
-          <div className="font-serif text-3xl font-bold tracking-tight text-cinema-fg">
-            归田记<sup className="ml-0.5 text-xs">®</sup>
+          <div className="flex items-center gap-2">
+            <div className="font-serif text-2xl font-bold tracking-tight text-cinema-fg cursor-pointer" onClick={() => navigate('/')}>
+              归田记<sup className="ml-0.5 text-xs">®</sup>
+            </div>
           </div>
-          <div className="hidden items-center gap-8 md:flex">
+          <div className="hidden items-center gap-6 md:flex">
             {[
-              { label: '故乡', active: true },
-              { label: '岁月', active: false },
-              { label: '田野', active: false },
-              { label: '声音', active: false },
-              { label: '关于我们', active: false },
+              { label: '首页', path: '/' },
+              { label: '乡音互通', path: '/dialect' },
+              { label: '记忆地图', path: '/memory' },
+              { label: '故人寻踪', path: '/friends' },
+              { label: '认知守护', path: '/health' },
             ].map((link) => (
-              <a
-                key={link.label}
-                href="#"
+              <button
+                key={link.path}
+                onClick={() => navigate(link.path)}
                 className={`text-sm transition-colors hover:text-cinema-fg ${
-                  link.active ? 'text-cinema-fg' : 'text-cinema-muted'
+                  location.pathname === link.path ? 'text-cinema-fg' : 'text-cinema-muted'
                 }`}
               >
                 {link.label}
-              </a>
+              </button>
             ))}
           </div>
           <button
@@ -154,6 +164,9 @@ export default function App() {
         </div>
       </nav>
 
+      {/* ==================== 页面路由 ==================== */}
+      <Routes>
+        <Route path="/" element={<>
       {/* ==================== Hero — 双视频交叉淡化 ==================== */}
       <section className="relative h-screen w-full overflow-hidden">
         {/* Video A — 现在：客厅望阳台（老张背影） */}
@@ -278,14 +291,15 @@ export default function App() {
 
           <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2">
             {[
-              { title: '乡音互通', desc: '全方言高容错语音交互，老人说方言，AI自动翻译成普通话文字给子女看。' },
-              { title: '时空记忆地图', desc: '在地图上标注老照片的拍摄地点，AI自动识别年代、生成故事，支持今昔对比。' },
-              { title: '故人寻踪', desc: '输入模糊记忆片段，AI跨区域匹配可能的老友，三重身份核验保障安全。' },
-              { title: '认知守护', desc: '每日趣味方言认知小测，AI追踪记忆曲线趋势，异常自动预警子女。' },
+              { title: '乡音互通', desc: '全方言高容错语音交互，老人说方言，AI自动翻译成普通话文字给子女看。', path: '/dialect' },
+              { title: '时空记忆地图', desc: '在地图上标注老照片的拍摄地点，AI自动识别年代、生成故事，支持今昔对比。', path: '/memory' },
+              { title: '故人寻踪', desc: '输入模糊记忆片段，AI跨区域匹配可能的老友，三重身份核验保障安全。', path: '/friends' },
+              { title: '认知守护', desc: '每日趣味方言认知小测，AI追踪记忆曲线趋势，异常自动预警子女。', path: '/health' },
             ].map((mod, i) => (
               <div
                 key={mod.title}
-                className="group relative rounded-2xl border border-[#e8e2d8] bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                onClick={() => navigate(mod.path)}
+                className="group relative cursor-pointer rounded-2xl border border-[#e8e2d8] bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
               >
                 <div
                   className="absolute inset-[5px] rounded-xl border border-[#f0ebe2] opacity-60 transition-opacity group-hover:opacity-100"
@@ -327,6 +341,13 @@ export default function App() {
           </button>
         </div>
       </section>
+
+        </>} />
+        <Route path="/dialect" element={<DialectPage />} />
+        <Route path="/memory" element={<MemoryPage />} />
+        <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/health" element={<HealthPage />} />
+      </Routes>
 
       {/* ==================== 底部 ==================== */}
       <footer className="bg-[#2d2418] py-8 text-center text-sm text-[#8a7f72]">
