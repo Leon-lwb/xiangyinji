@@ -4,6 +4,7 @@ import DialectPage from './pages/DialectPage'
 import MemoryPage from './pages/MemoryPage'
 import FriendsPage from './pages/FriendsPage'
 import HealthPage from './pages/HealthPage'
+import { useHeroTextAnimation, useStaggerReveal, useScrollReveal } from './utils/animations'
 
 const VIDEO_B_DISPLAY_MS = 5000
 const CROSSFADE_MS = 1500
@@ -124,7 +125,7 @@ export default function App() {
             onClick={() => navigate('/')}
           >
             <span className="font-serif text-xl font-bold tracking-tight text-cinema-fg">
-              归田记<sup className="ml-0.5 text-xs">®</sup>
+              乡音记<sup className="ml-0.5 text-xs">®</sup>
             </span>
           </div>
           <div className="hidden items-center gap-1 md:flex">
@@ -199,6 +200,11 @@ function HomePage({
   onTrigger: () => void
   onNavigate: (path: string) => void
 }) {
+  const heroTitleRef = useHeroTextAnimation<HTMLHeadingElement>()
+  const cardsRef = useStaggerReveal<HTMLDivElement>('.module-card', 150)
+  const aboutRef = useScrollReveal<HTMLDivElement>({ y: 30 })
+  const ctaRef = useScrollReveal<HTMLDivElement>({ y: 30, delay: 100 })
+
   return (
     <>
       {/* ==================== Hero — 双视频交叉淡化 ==================== */}
@@ -247,7 +253,8 @@ function HomePage({
         {/* 内容层 */}
         <div className="relative z-20 flex h-full flex-col items-center justify-center px-6 text-center">
           <h1
-            className="animate-fade-rise font-serif text-5xl font-normal leading-[0.95] tracking-[-0.02em] text-cinema-fg sm:text-7xl md:text-8xl"
+            ref={heroTitleRef}
+            className="font-serif text-5xl font-normal leading-[0.95] tracking-[-0.02em] text-cinema-fg sm:text-7xl md:text-8xl"
             style={{ textShadow: '0 2px 30px rgba(0,0,0,0.5)' }}
           >
             一声<em className="not-italic text-cinema-primary">乡音</em>，
@@ -306,7 +313,7 @@ function HomePage({
 
       {/* 内容区域 */}
       <section className="bg-[#faf7f0] px-6 py-24 text-[#2d2418]">
-        <div className="mx-auto max-w-4xl">
+        <div ref={aboutRef} className="mx-auto max-w-4xl opacity-0">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#b8860b]">
             关于乡音记
           </p>
@@ -321,12 +328,12 @@ function HomePage({
             从一声乡音开始，找回岁月里的温暖。
           </p>
 
-          <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div ref={cardsRef} className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2">
             {MODULE_CARDS.map((mod, i) => (
               <div
                 key={mod.title}
                 onClick={() => onNavigate(mod.path)}
-                className="card-hover group relative cursor-pointer rounded-2xl border border-[#e8e2d8] bg-white p-8 shadow-sm"
+                className="module-card card-hover group relative cursor-pointer rounded-2xl border border-[#e8e2d8] bg-white p-8 shadow-sm opacity-0"
               >
                 <div
                   className="absolute inset-[5px] rounded-xl border border-[#f0ebe2] opacity-60 transition-opacity group-hover:opacity-100"
@@ -358,7 +365,7 @@ function HomePage({
 
       {/* 底部 CTA */}
       <section className="bg-[#f5efe4] px-6 py-24 text-center">
-        <div className="mx-auto max-w-2xl">
+        <div ref={ctaRef} className="mx-auto max-w-2xl opacity-0">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#b8860b]">
             开始使用
           </p>

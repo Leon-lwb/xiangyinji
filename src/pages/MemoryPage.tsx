@@ -1,12 +1,103 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { memoryPhotos, memoryTimeline } from '../data'
 import type { MemoryPhoto } from '../data'
 import { speak } from '../utils/speech'
+import { useStaggerReveal } from '../utils/animations'
+
+/* ============================================
+   今昔对比滑块组件
+   ============================================ */
+function ComparisonSlider({ photo }: { photo: MemoryPhoto }) {
+  const [sliderPos, setSliderPos] = useState(50)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef(false)
+
+  const handleMove = useCallback((clientX: number) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const x = ((clientX - rect.left) / rect.width) * 100
+    setSliderPos(Math.max(0, Math.min(100, x)))
+  }, [])
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (isDragging.current) handleMove(e.clientX)
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (isDragging.current && e.touches[0]) handleMove(e.touches[0].clientX)
+    }
+    const onStop = () => { isDragging.current = false }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onStop)
+    window.addEventListener('touchmove', onTouchMove)
+    window.addEventListener('touchend', onStop)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onStop)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', onStop)
+    }
+  }, [handleMove])
+
+  return (
+    <div className="mb-4">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="rounded-md bg-[#8a7f72] px-2 py-0.5 text-xs font-semibold text-white">今昔对比</span>
+        <span className="text-sm text-[#8a7f72]">拖动滑块查看变化</span>
+      </div>
+      <div
+        ref={containerRef}
+        className="relative w-full overflow-hidden rounded-xl select-none"
+        style={{ aspectRatio: '16/9', cursor: 'ew-resize' }}
+        onMouseDown={(e) => { isDragging.current = true; handleMove(e.clientX) }}
+        onTouchStart={(e) => { isDragging.current = true; if (e.touches[0]) handleMove(e.touches[0].clientX) }}
+      >
+        {/* 底层：今（彩色） */}
+        <img
+          src={photo.image}
+          alt={`${photo.title} - 今`}
+          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+        />
+        <span className="absolute bottom-3 right-3 rounded bg-black/60 px-2 py-1 text-xs font-medium text-white">今 · {photo.newDesc}</span>
+
+        {/* 上层：昔（怀旧滤镜），用 clip-path 控制显示区域 */}
+        <div
+          className="absolute inset-0 overflow-hidden"
+          style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+        >
+          <img
+            src={photo.image}
+            alt={`${photo.title} - 昔`}
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ filter: 'sepia(0.7) contrast(0.9) brightness(0.85)' }}
+            draggable={false}
+          />
+          <span className="absolute bottom-3 left-3 rounded bg-black/60 px-2 py-1 text-xs font-medium text-amber-200">昔 · {photo.oldDesc}</span>
+        </div>
+
+        {/* 滑块分割线 */}
+        <div
+          className="absolute top-0 bottom-0 z-10 flex items-center justify-center"
+          style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
+        >
+          <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg" />
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-white/20 backdrop-blur-sm shadow-lg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <path d="M8 7l-5 5 5 5M16 7l5 5-5 5" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function MemoryPage() {
   const [selectedPhoto, setSelectedPhoto] = useState<MemoryPhoto | null>(null)
   const [detailRef] = useState({ current: null as HTMLDivElement | null })
   const detailAreaRef = useRef<HTMLDivElement>(null)
+  const timelineRef = useStaggerReveal<HTMLDivElement>('.timeline-item', 100)
 
   const handleSelectPhoto = useCallback((photo: MemoryPhoto) => {
     setSelectedPhoto(photo)
@@ -92,7 +183,11 @@ export default function MemoryPage() {
                 <h2 className="font-serif text-2xl font-bold text-[#2d2418]">{selectedPhoto.title}</h2>
                 <span className="text-sm text-[#8a7f72]">{selectedPhoto.place}</span>
               </div>
-              <img src={selectedPhoto.image} alt={selectedPhoto.title} className="mb-4 w-full rounded-xl object-cover" style={{ maxHeight: '300px' }} />
+              {selectedPhoto.hasComparison ? (
+                <ComparisonSlider photo={selectedPhoto} />
+              ) : (
+                <img src={selectedPhoto.image} alt={selectedPhoto.title} className="mb-4 w-full rounded-xl object-cover" style={{ maxHeight: '300px' }} />
+              )}
               <p className="mb-4 text-lg leading-relaxed text-[#5a4f42]">{selectedPhoto.story}</p>
               <button
                 onClick={() => speak(selectedPhoto.story)}
@@ -111,10 +206,10 @@ export default function MemoryPage() {
         {/* Timeline */}
         <div className="mb-8">
           <h2 className="mb-6 font-serif text-2xl font-bold text-[#2d2418]">人生时间轴</h2>
-          <div className="relative pl-8">
+          <div ref={timelineRef} className="relative pl-8">
             <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#b8860b] to-[#e8e2d8]" />
             {memoryTimeline.map((item, i) => (
-              <div key={i} className="relative mb-6 last:mb-0">
+              <div key={i} className="timeline-item relative mb-6 last:mb-0 opacity-0">
                 <div className="absolute -left-[22px] top-1 h-3 w-3 rounded-full border-2 border-[#b8860b] bg-white" />
                 <div className="card-hover rounded-xl border border-[#e8e2d8] bg-white p-4 shadow-sm">
                   <div className="flex items-center gap-3">

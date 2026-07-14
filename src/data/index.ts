@@ -16,29 +16,78 @@ export interface DialectDictEntry {
 }
 
 export const dialectDict: DialectDictEntry[] = [
+  // 四川话
   { dialect: '啥子', mandarin: '什么', region: '四川' },
   { dialect: '巴适', mandarin: '舒服', region: '四川' },
   { dialect: '搞啥子', mandarin: '做什么', region: '四川' },
   { dialect: '幺儿', mandarin: '孩子', region: '四川' },
   { dialect: '莫要', mandarin: '不要', region: '四川' },
+  { dialect: '要得', mandarin: '好的', region: '四川' },
+  { dialect: '雄起', mandarin: '加油', region: '四川' },
+  { dialect: '龙门阵', mandarin: '聊天', region: '四川' },
+  { dialect: '安逸', mandarin: '满意', region: '四川' },
+  // 广东话（粤语）
   { dialect: '食饭', mandarin: '吃饭', region: '广东' },
   { dialect: '唔该', mandarin: '谢谢', region: '广东' },
   { dialect: '睇', mandarin: '看', region: '广东' },
   { dialect: '企', mandarin: '站', region: '广东' },
   { dialect: '冇', mandarin: '没有', region: '广东' },
+  { dialect: '靓仔', mandarin: '小伙子', region: '广东' },
+  { dialect: '点解', mandarin: '为什么', region: '广东' },
+  { dialect: '嘢', mandarin: '东西', region: '广东' },
+  // 上海话
   { dialect: '阿拉', mandarin: '我们', region: '上海' },
   { dialect: '侬', mandarin: '你', region: '上海' },
   { dialect: '晓得', mandarin: '知道', region: '上海' },
   { dialect: '白相', mandarin: '玩', region: '上海' },
   { dialect: '今朝', mandarin: '今天', region: '上海' },
+  { dialect: '辰光', mandarin: '时候', region: '上海' },
+  { dialect: '囡囡', mandarin: '小女孩', region: '上海' },
+  // 东北话
   { dialect: '咋整', mandarin: '怎么办', region: '东北' },
   { dialect: '唠嗑', mandarin: '聊天', region: '东北' },
   { dialect: '贼', mandarin: '很', region: '东北' },
+  { dialect: '嘎哈', mandarin: '干什么', region: '东北' },
+  { dialect: '埋汰', mandarin: '脏', region: '东北' },
+  { dialect: '磕碜', mandarin: '难看', region: '东北' },
+  { dialect: '唠扯', mandarin: '闲聊', region: '东北' },
+  // 山东话
   { dialect: '俺', mandarin: '我', region: '山东' },
   { dialect: '妮儿', mandarin: '女孩', region: '山东' },
+  { dialect: '杠', mandarin: '很', region: '山东' },
+  { dialect: '潮乎', mandarin: '潮湿', region: '山东' },
+  { dialect: '夜来', mandarin: '昨天', region: '山东' },
+  // 河南话
   { dialect: '中', mandarin: '行', region: '河南' },
   { dialect: '得劲', mandarin: '舒服', region: '河南' },
   { dialect: '晌午', mandarin: '中午', region: '河南' },
+  { dialect: '不中', mandarin: '不行', region: '河南' },
+  { dialect: '搁哪', mandarin: '在哪', region: '河南' },
+  // 湖南话
+  { dialect: '么子', mandarin: '什么', region: '湖南' },
+  { dialect: '咯', mandarin: '的', region: '湖南' },
+  { dialect: '霸蛮', mandarin: '固执', region: '湖南' },
+  { dialect: '韵味', mandarin: '舒服', region: '湖南' },
+  { dialect: '策', mandarin: '聊天', region: '湖南' },
+  // 陕西话
+  { dialect: '咋向', mandarin: '怎么样', region: '陕西' },
+  { dialect: '额', mandarin: '我', region: '陕西' },
+  { dialect: '聊咋咧', mandarin: '很好', region: '陕西' },
+  { dialect: '谝', mandarin: '聊天', region: '陕西' },
+  { dialect: '殁', mandarin: '死', region: '陕西' },
+  // 福建话（闽南语）
+  { dialect: '呷', mandarin: '吃', region: '福建' },
+  { dialect: '厝', mandarin: '家', region: '福建' },
+  { dialect: '歹势', mandarin: '不好意思', region: '福建' },
+  { dialect: '古早', mandarin: '旧时', region: '福建' },
+  // 江苏话（吴语）
+  { dialect: '弗', mandarin: '不', region: '江苏' },
+  { dialect: '蛮好', mandarin: '很好', region: '江苏' },
+  { dialect: '作啥', mandarin: '干什么', region: '江苏' },
+  // 安徽话
+  { dialect: '可照', mandarin: '行不行', region: '安徽' },
+  { dialect: '真滋', mandarin: '舒服', region: '安徽' },
+  { dialect: '日白', mandarin: '聊天', region: '安徽' },
 ]
 
 /* ============================================
@@ -51,6 +100,10 @@ export const dialectInputs: string[] = [
   '食饭未啊？唔该帮我睇下门口个包裹。',
   '妮儿，你晓得咋走不？俺找不到回家的路了。',
   '晌午得劲得很，俺想吃碗面条，中不中？',
+  '么子事咯？策两句噻，韵味得很。',
+  '额咋向咧？谝一谝，聊咋咧！',
+  '呷饭了没？转来厝里坐坐，古早味还在。',
+  '夜来杠冷，可照去添件衣裳？',
 ]
 
 /* ============================================
