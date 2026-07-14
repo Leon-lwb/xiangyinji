@@ -56,14 +56,18 @@ export default function FriendsPage() {
   }, [chatInput, chatMessages])
 
   return (
-    <div className="min-h-screen bg-[#faf7f0] px-4 py-8 pt-28">
-      <div className="mx-auto max-w-4xl">
-        {/* Hero */}
-        <div className="mb-8">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#b8860b]">故人寻踪</p>
-          <h1 className="mb-4 font-serif text-4xl font-bold text-[#2d2418]">寻找老朋友</h1>
-          <p className="text-lg leading-relaxed text-[#5a4f42]">输入模糊记忆片段，AI跨区域匹配可能的老友</p>
-        </div>
+    <div className="min-h-screen bg-[#faf7f0] text-[#2d2418]">
+      {/* 暗色渐变Hero */}
+      <div className="page-hero-dark page-hero-glow px-4 pb-16 pt-32 text-center">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#b8860b]">故人寻踪</p>
+        <h1 className="font-serif text-4xl font-bold tracking-tight text-cinema-fg sm:text-5xl">
+          寻找老朋友
+        </h1>
+        <p className="mt-4 text-lg text-cinema-muted">
+          输入模糊记忆片段，AI 跨区域匹配可能的老友
+        </p>
+      </div>
+      <div className="mx-auto max-w-4xl px-4 py-8">
 
         {/* Steps Indicator */}
         <div className="mb-8 flex items-center justify-center gap-2">
@@ -82,7 +86,7 @@ export default function FriendsPage() {
         </div>
 
         {/* Step Content */}
-        <div className="rounded-2xl border border-[#e8e2d8] bg-white p-6 shadow-sm">
+        <div className="card-hover rounded-2xl border border-[#e8e2d8] bg-white p-6 shadow-sm">
           {step === 1 && (
             <div className="space-y-4">
               <div>

@@ -16,17 +16,21 @@ export default function MemoryPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#faf7f0] px-4 py-8 pt-28">
-      <div className="mx-auto max-w-5xl">
-        {/* Hero */}
-        <div className="mb-10">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#b8860b]">记忆地图</p>
-          <h1 className="mb-4 font-serif text-4xl font-bold text-[#2d2418]">时空记忆地图</h1>
-          <p className="text-lg leading-relaxed text-[#5a4f42]">在地图上标注老照片的拍摄地点，重建岁月记忆坐标系</p>
-        </div>
+    <div className="min-h-screen bg-[#faf7f0] text-[#2d2418]">
+      {/* 暗色渐变Hero */}
+      <div className="page-hero-dark page-hero-glow px-4 pb-16 pt-32 text-center">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#b8860b]">记忆地图</p>
+        <h1 className="font-serif text-4xl font-bold tracking-tight text-cinema-fg sm:text-5xl">
+          时空记忆地图
+        </h1>
+        <p className="mt-4 text-lg text-cinema-muted">
+          在地图上标注老照片的拍摄地点，重建岁月记忆坐标系
+        </p>
+      </div>
+      <div className="mx-auto max-w-5xl px-4 py-8">
 
         {/* SVG Map */}
-        <div className="mb-8 overflow-hidden rounded-2xl border border-[#e8e2d8] bg-white shadow-sm">
+        <div className="card-hover mb-8 overflow-hidden rounded-2xl border border-[#e8e2d8] bg-white shadow-sm">
           <div className="relative w-full" style={{ aspectRatio: '8/5' }}>
             <svg viewBox="0 0 800 500" className="absolute inset-0 h-full w-full">
               {/* Background */}
@@ -82,7 +86,7 @@ export default function MemoryPage() {
         {/* Photo Detail */}
         <div ref={detailAreaRef} className="scroll-mt-28">
           {selectedPhoto ? (
-            <div className="mb-8 rounded-2xl border border-[#e8e2d8] bg-white p-6 shadow-sm">
+            <div className="card-hover mb-8 rounded-2xl border border-[#e8e2d8] bg-white p-6 shadow-sm">
               <div className="mb-4 flex items-center gap-3">
                 <span className="rounded-lg bg-[#fdf5e0] px-3 py-1 text-sm font-bold text-[#b8860b]">{selectedPhoto.year}</span>
                 <h2 className="font-serif text-2xl font-bold text-[#2d2418]">{selectedPhoto.title}</h2>
@@ -112,7 +116,7 @@ export default function MemoryPage() {
             {memoryTimeline.map((item, i) => (
               <div key={i} className="relative mb-6 last:mb-0">
                 <div className="absolute -left-[22px] top-1 h-3 w-3 rounded-full border-2 border-[#b8860b] bg-white" />
-                <div className="rounded-xl border border-[#e8e2d8] bg-white p-4 shadow-sm">
+                <div className="card-hover rounded-xl border border-[#e8e2d8] bg-white p-4 shadow-sm">
                   <div className="flex items-center gap-3">
                     <span className="font-serif text-lg font-bold text-[#b8860b]">{item.year}</span>
                     <span className="rounded-md bg-[#fdf5e0] px-2 py-0.5 text-sm font-semibold text-[#b8860b]">{item.event}</span>

@@ -490,20 +490,21 @@ export default function HealthPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#faf7f0] px-4 py-6 text-[#2d2418]">
-      <div className="mx-auto max-w-3xl">
-        {/* ========== 标题 ========== */}
-        <header className="mb-6 text-center">
-          <h1 className="font-serif text-3xl font-bold tracking-tight">
-            认知守护
-          </h1>
-          <p className="mt-2 text-base text-[#7a6f5e]">
-            每日小测，追踪趋势，邻里守望，守护记忆
-          </p>
-        </header>
+    <div className="min-h-screen bg-[#faf7f0] text-[#2d2418]">
+      {/* 暗色渐变Hero */}
+      <div className="page-hero-dark page-hero-glow px-4 pb-16 pt-32 text-center">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#b8860b]">认知守护</p>
+        <h1 className="font-serif text-4xl font-bold tracking-tight text-cinema-fg sm:text-5xl">
+          守护每一天的记忆
+        </h1>
+        <p className="mt-4 text-lg text-cinema-muted">
+          每日小测，追踪趋势，邻里守望
+        </p>
+      </div>
+      <div className="mx-auto max-w-3xl px-4 py-8">
 
         {/* ========== 本周认知趋势图 ========== */}
-        <section className="mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
+        <section className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-lg font-semibold">本周认知趋势</h2>
             <span className="rounded-full bg-[#fdf5e0] px-3 py-1 text-sm font-medium text-[#b8860b]">
@@ -522,7 +523,7 @@ export default function HealthPage() {
         </section>
 
         {/* ========== 健康提醒列表 ========== */}
-        <section className="mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
+        <section className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
           <h2 className="mb-4 text-lg font-semibold">健康提醒</h2>
           <div className="flex flex-col gap-3">
             {healthAlerts.map((alert) => {
@@ -560,7 +561,7 @@ export default function HealthPage() {
         </section>
 
         {/* ========== 邻里互助看护板 ========== */}
-        <section className="mb-10 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
+        <section className="card-hover mb-10 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
           <h2 className="mb-4 text-lg font-semibold">邻里互助看护板</h2>
           <div className="flex flex-col gap-3">
             {helps.map((h) => (

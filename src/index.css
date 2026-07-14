@@ -16,6 +16,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html, body {
   width: 100%;
   height: 100%;
@@ -23,12 +27,20 @@ html, body {
   background: hsl(25, 30%, 8%);
 }
 
-/* ============================================
-   双视频 Crossfade — 点击触发（非自动循环）
-   初始：Video A 可见(opacity:1)，Video B 隐藏(opacity:0)
-   点击"聆听乡音"后：音频播放完毕 → JS 切换 showVideoB 状态
-   → CSS transition 1.5s 完成交叉淡化
-   ============================================ */
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(25, 30%, 12%);
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(42, 60%, 40%);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(42, 70%, 50%);
+}
 
 /* ============================================
    Ken Burns 慢推运镜
@@ -78,6 +90,48 @@ html, body {
 }
 
 /* ============================================
+   页面切换动画
+   ============================================ */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 0.5s ease-out both;
+}
+
+/* ============================================
+   滚动揭示动画
+   ============================================ */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.reveal {
+  opacity: 0;
+}
+
+.reveal.revealed {
+  animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ============================================
    滚动提示箭头脉冲
    ============================================ */
 @keyframes scroll-pulse {
@@ -124,6 +178,47 @@ html, body {
 }
 
 /* ============================================
+   暗色页头渐变 (模块页通用)
+   ============================================ */
+.page-hero-dark {
+  background: linear-gradient(180deg,
+    hsl(25, 30%, 8%) 0%,
+    hsl(25, 25%, 10%) 40%,
+    hsl(30, 20%, 92%) 100%
+  );
+}
+
+.page-hero-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.page-hero-glow::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  width: 600px;
+  height: 600px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(184, 134, 11, 0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ============================================
+   卡片悬浮效果
+   ============================================ */
+.card-hover {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(184, 134, 11, 0.15);
+}
+
+/* ============================================
    prefers-reduced-motion — 禁用运镜，保留交叉淡化
    ============================================ */
 @media (prefers-reduced-motion: reduce) {
@@ -137,6 +232,14 @@ html, body {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+  .page-enter {
+    animation: none;
+    opacity: 1;
+  }
+  .reveal {
+    opacity: 1;
+    animation: none;
   }
   .scroll-pulse {
     animation: none;

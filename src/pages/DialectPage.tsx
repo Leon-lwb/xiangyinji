@@ -234,17 +234,18 @@ export default function DialectPage() {
      渲染
      ============================================ */
   return (
-    <div className="min-h-screen bg-[#faf7f0] px-4 py-6 text-[#2d2418]">
-      <div className="mx-auto max-w-3xl">
-        {/* ========== 标题 ========== */}
-        <header className="mb-6 text-center">
-          <h1 className="font-serif text-3xl font-bold tracking-tight">
-            乡音互通
-          </h1>
-          <p className="mt-2 text-base text-[#7a6f5e]">
-            说一句乡音，AI 帮你翻译给最亲的人听
-          </p>
-        </header>
+    <div className="min-h-screen bg-[#faf7f0] text-[#2d2418]">
+      {/* 暗色渐变Hero */}
+      <div className="page-hero-dark page-hero-glow px-4 pb-16 pt-32 text-center">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#b8860b]">乡音互通</p>
+        <h1 className="font-serif text-4xl font-bold tracking-tight text-cinema-fg sm:text-5xl">
+          说一句乡音，跨越代际
+        </h1>
+        <p className="mt-4 text-lg text-cinema-muted">
+          AI 实时翻译方言，让老人和子女无障碍沟通
+        </p>
+      </div>
+      <div className="mx-auto max-w-3xl px-4 py-8">
 
         {/* ========== 方向切换（胶囊式） ========== */}
         <div className="mb-6 flex justify-center">
@@ -273,7 +274,7 @@ export default function DialectPage() {
         </div>
 
         {/* ========== 输入区 ========== */}
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
+        <section className="card-hover mb-6 rounded-2xl bg-white p-6 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">
               {direction === 'old2young' ? '请说出方言' : '请输入普通话'}
@@ -349,7 +350,7 @@ export default function DialectPage() {
 
         {/* ========== 翻译结果卡片 ========== */}
         {result && (
-          <section className="mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.12)]">
+          <section className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.12)]">
             {/* 原文 */}
             <div className="mb-3">
               <p className="text-xs text-[#9a8f7e]">原文（{sourceLabel}）</p>
@@ -397,7 +398,7 @@ export default function DialectPage() {
         )}
 
         {/* ========== 对话历史（左右气泡） ========== */}
-        <section className="mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
+        <section className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
           <h2 className="mb-4 text-lg font-semibold">对话历史</h2>
           <div className="flex max-h-[420px] flex-col gap-4 overflow-y-auto pr-1">
             {history.map((c) => {
@@ -453,7 +454,7 @@ export default function DialectPage() {
         </section>
 
         {/* ========== 方言词典搜索 ========== */}
-        <section className="mb-10 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
+        <section className="card-hover mb-10 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
           <h2 className="mb-4 text-lg font-semibold">方言词典</h2>
           <input
             value={searchKeyword}

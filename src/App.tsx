@@ -1,24 +1,27 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Routes, Route, useNavigate, useLocation, Link } from 'react-router-dom'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import DialectPage from './pages/DialectPage'
 import MemoryPage from './pages/MemoryPage'
 import FriendsPage from './pages/FriendsPage'
 import HealthPage from './pages/HealthPage'
 
-/**
- * 乡音记 · 沉浸式双视频 Crossfade 首页
- *
- * 交互逻辑（每次点击触发一次）：
- * 1. 初始状态：Video A 可见（老人背影），Video B 隐藏
- * 2. 用户点击"聆听乡音"
- * 3. 播放 radio-voice.mp3（"原来你在这儿"）
- * 4. 音频播放完毕后，交叉淡化到 Video B（年轻小伙在金色稻田）
- * 5. Video B 显示数秒后，淡回 Video A
- * 6. 等待下一次点击
- */
+const VIDEO_B_DISPLAY_MS = 5000
+const CROSSFADE_MS = 1500
 
-const VIDEO_B_DISPLAY_MS = 5000 // Video B 显示时长
-const CROSSFADE_MS = 1500 // 交叉淡化时长
+const NAV_LINKS = [
+  { label: '首页', path: '/' },
+  { label: '乡音互通', path: '/dialect' },
+  { label: '记忆地图', path: '/memory' },
+  { label: '故人寻踪', path: '/friends' },
+  { label: '认知守护', path: '/health' },
+]
+
+const MODULE_CARDS = [
+  { title: '乡音互通', desc: '全方言高容错语音交互，老人说方言，AI自动翻译成普通话文字给子女看。', path: '/dialect', icon: '🗣' },
+  { title: '时空记忆地图', desc: '在地图上标注老照片的拍摄地点，AI自动识别年代、生成故事，支持今昔对比。', path: '/memory', icon: '🗺' },
+  { title: '故人寻踪', desc: '输入模糊记忆片段，AI跨区域匹配可能的老友，三重身份核验保障安全。', path: '/friends', icon: '🤝' },
+  { title: '认知守护', desc: '每日趣味方言认知小测，AI追踪记忆曲线趋势，异常自动预警子女。', path: '/health', icon: '🧠' },
+]
 
 export default function App() {
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -32,9 +35,6 @@ export default function App() {
   const [isTriggering, setIsTriggering] = useState(false)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  /* ============================================
-     清理所有定时器
-     ============================================ */
   const clearAllTimers = useCallback(() => {
     timersRef.current.forEach((t) => clearTimeout(t))
     timersRef.current = []
@@ -44,48 +44,41 @@ export default function App() {
     return () => clearAllTimers()
   }, [clearAllTimers])
 
-  /* ============================================
-     滚动监听
-     ============================================ */
+  /* 滚动监听 */
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 80)
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  /* ============================================
-     核心交互：点击"聆听乡音"
-     ============================================ */
+  /* 切换页面时滚动到顶部 */
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
+  /* 核心交互：点击"聆听乡音" */
   const handleTriggerMemory = useCallback(() => {
-    if (isTriggering) return // 正在播放中，忽略重复点击
+    if (isTriggering) return
     setIsTriggering(true)
     clearAllTimers()
 
-    // 1. 播放收音机音效
     if (audioRef.current) {
       audioRef.current.currentTime = 0
       audioRef.current.play().catch(() => {})
     }
-
-    // 2. 确保 Video A 正在播放（老人背影）
     if (videoARef.current) {
       videoARef.current.play().catch(() => {})
     }
 
-    // 3. 音频播放完毕后，触发交叉淡化到 Video B
     const triggerCrossfade = () => {
-      // 确保 Video B 从头播放
       if (videoBRef.current) {
         videoBRef.current.currentTime = 0
         videoBRef.current.play().catch(() => {})
       }
-      // 切换到 Video B
       setShowVideoB(true)
 
-      // 4. Video B 显示一段时间后，淡回 Video A
       const fadeBack = setTimeout(() => {
         setShowVideoB(false)
-        // 等淡化完成后重置状态
         const reset = setTimeout(() => {
           setIsTriggering(false)
           timersRef.current = timersRef.current.filter((t) => t !== reset)
@@ -96,59 +89,53 @@ export default function App() {
       timersRef.current.push(fadeBack)
     }
 
-    // 监听音频结束，或使用超时兜底
     const audio = audioRef.current
     if (audio) {
       const onEnded = () => {
         audio.removeEventListener('ended', onEnded)
-        // 短暂延迟，让"转头"动作有时间
         const delay = setTimeout(triggerCrossfade, 500)
         timersRef.current.push(delay)
       }
       audio.addEventListener('ended', onEnded)
-
-      // 兜底：如果音频事件未触发，8秒后强制交叉淡化
       const fallback = setTimeout(() => {
         audio.removeEventListener('ended', onEnded)
         triggerCrossfade()
       }, 8000)
       timersRef.current.push(fallback)
     } else {
-      // 没有音频，直接交叉淡化
       triggerCrossfade()
     }
   }, [isTriggering, clearAllTimers])
 
-  /* ============================================
-     渲染
-     ============================================ */
+  /* 判断导航栏样式 */
+  const navDark = isHome && !scrolled
+
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-cinema-bg text-cinema-fg">
-      {/* ==================== 导航栏 ==================== */}
+      {/* ==================== 全局导航栏 ==================== */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled ? 'bg-black/40 backdrop-blur-xl' : 'bg-transparent'
+          navDark ? 'bg-transparent' : 'bg-black/50 backdrop-blur-xl border-b border-white/5'
         }`}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-6">
-          <div className="flex items-center gap-2">
-            <div className="font-serif text-2xl font-bold tracking-tight text-cinema-fg cursor-pointer" onClick={() => navigate('/')}>
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => navigate('/')}
+          >
+            <span className="font-serif text-xl font-bold tracking-tight text-cinema-fg">
               归田记<sup className="ml-0.5 text-xs">®</sup>
-            </div>
+            </span>
           </div>
-          <div className="hidden items-center gap-6 md:flex">
-            {[
-              { label: '首页', path: '/' },
-              { label: '乡音互通', path: '/dialect' },
-              { label: '记忆地图', path: '/memory' },
-              { label: '故人寻踪', path: '/friends' },
-              { label: '认知守护', path: '/health' },
-            ].map((link) => (
+          <div className="hidden items-center gap-1 md:flex">
+            {NAV_LINKS.map((link) => (
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
-                className={`text-sm transition-colors hover:text-cinema-fg ${
-                  location.pathname === link.path ? 'text-cinema-fg' : 'text-cinema-muted'
+                className={`rounded-lg px-3 py-2 text-sm transition-all hover:bg-white/5 ${
+                  location.pathname === link.path
+                    ? 'text-cinema-fg font-medium'
+                    : 'text-cinema-muted hover:text-cinema-fg'
                 }`}
               >
                 {link.label}
@@ -157,7 +144,7 @@ export default function App() {
           </div>
           <button
             onClick={handleTriggerMemory}
-            className="liquid-glass rounded-full px-6 py-2.5 text-sm text-cinema-fg transition-transform hover:scale-[1.03]"
+            className="liquid-glass rounded-full px-5 py-2 text-sm text-cinema-fg transition-transform hover:scale-[1.03] active:scale-95"
           >
             回到那一天
           </button>
@@ -165,14 +152,60 @@ export default function App() {
       </nav>
 
       {/* ==================== 页面路由 ==================== */}
-      <Routes>
-        <Route path="/" element={<>
+      <div key={location.pathname} className="page-enter">
+        <Routes location={location}>
+          <Route path="/" element={<HomePage
+            videoARef={videoARef}
+            videoBRef={videoBRef}
+            showVideoB={showVideoB}
+            isTriggering={isTriggering}
+            onTrigger={handleTriggerMemory}
+            onNavigate={navigate}
+          />} />
+          <Route path="/dialect" element={<DialectPage />} />
+          <Route path="/memory" element={<MemoryPage />} />
+          <Route path="/friends" element={<FriendsPage />} />
+          <Route path="/health" element={<HealthPage />} />
+        </Routes>
+      </div>
+
+      {/* ==================== 底部 ==================== */}
+      <footer className="bg-[#1a1410] py-10 text-center">
+        <p className="font-serif text-lg text-[#b8860b]">乡音记 · 老地方遇故人</p>
+        <p className="mt-2 text-sm text-[#8a7f72]">以乡音为纽带，以旧地为坐标 &copy; 2026</p>
+      </footer>
+
+      {/* ==================== 音频元素 ==================== */}
+      <audio ref={audioRef} src="/assets/radio-voice.mp3" preload="auto" />
+    </div>
+  )
+}
+
+/* ============================================
+   首页组件
+   ============================================ */
+function HomePage({
+  videoARef,
+  videoBRef,
+  showVideoB,
+  isTriggering,
+  onTrigger,
+  onNavigate,
+}: {
+  videoARef: React.RefObject<HTMLVideoElement | null>
+  videoBRef: React.RefObject<HTMLVideoElement | null>
+  showVideoB: boolean
+  isTriggering: boolean
+  onTrigger: () => void
+  onNavigate: (path: string) => void
+}) {
+  return (
+    <>
       {/* ==================== Hero — 双视频交叉淡化 ==================== */}
       <section className="relative h-screen w-full overflow-hidden">
-        {/* Video A — 现在：客厅望阳台（老张背影） */}
         <video
           ref={videoARef}
-          className="ken-burns-a cinema-video absolute inset-0 z-0 h-full w-full object-cover"
+          className="ken-burns-a absolute inset-0 z-0 h-full w-full object-cover"
           style={{
             opacity: showVideoB ? 0 : 1,
             transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
@@ -186,10 +219,9 @@ export default function App() {
           <source src="/assets/video-a.mp4" type="video/mp4" />
         </video>
 
-        {/* Video B — 过去：金色稻田（年轻面庞微笑） */}
         <video
           ref={videoBRef}
-          className="ken-burns-b cinema-video absolute inset-0 z-0 h-full w-full object-cover"
+          className="ken-burns-b absolute inset-0 z-0 h-full w-full object-cover"
           style={{
             opacity: showVideoB ? 1 : 0,
             transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
@@ -232,9 +264,9 @@ export default function App() {
           </p>
 
           <button
-            onClick={handleTriggerMemory}
+            onClick={onTrigger}
             disabled={isTriggering}
-            className={`liquid-glass animate-fade-rise-delay-2 mt-12 flex items-center gap-2.5 rounded-full px-14 py-5 text-base text-cinema-fg transition-transform hover:scale-[1.03] cursor-pointer ${
+            className={`liquid-glass animate-fade-rise-delay-2 mt-12 flex items-center gap-2.5 rounded-full px-14 py-5 text-base text-cinema-fg transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer ${
               isTriggering ? 'opacity-60 cursor-wait' : ''
             }`}
             style={{ textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
@@ -262,7 +294,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* ==================== 暗→亮过渡带 ==================== */}
+      {/* 暗→亮过渡带 */}
       <div
         className="relative z-10 h-[120px]"
         style={{
@@ -272,7 +304,7 @@ export default function App() {
         }}
       />
 
-      {/* ==================== 内容区域 ==================== */}
+      {/* 内容区域 */}
       <section className="bg-[#faf7f0] px-6 py-24 text-[#2d2418]">
         <div className="mx-auto max-w-4xl">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#b8860b]">
@@ -290,27 +322,33 @@ export default function App() {
           </p>
 
           <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2">
-            {[
-              { title: '乡音互通', desc: '全方言高容错语音交互，老人说方言，AI自动翻译成普通话文字给子女看。', path: '/dialect' },
-              { title: '时空记忆地图', desc: '在地图上标注老照片的拍摄地点，AI自动识别年代、生成故事，支持今昔对比。', path: '/memory' },
-              { title: '故人寻踪', desc: '输入模糊记忆片段，AI跨区域匹配可能的老友，三重身份核验保障安全。', path: '/friends' },
-              { title: '认知守护', desc: '每日趣味方言认知小测，AI追踪记忆曲线趋势，异常自动预警子女。', path: '/health' },
-            ].map((mod, i) => (
+            {MODULE_CARDS.map((mod, i) => (
               <div
                 key={mod.title}
-                onClick={() => navigate(mod.path)}
-                className="group relative cursor-pointer rounded-2xl border border-[#e8e2d8] bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                onClick={() => onNavigate(mod.path)}
+                className="card-hover group relative cursor-pointer rounded-2xl border border-[#e8e2d8] bg-white p-8 shadow-sm"
               >
                 <div
                   className="absolute inset-[5px] rounded-xl border border-[#f0ebe2] opacity-60 transition-opacity group-hover:opacity-100"
                   style={{ pointerEvents: 'none' }}
                 />
                 <div className="relative z-10">
-                  <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-[#fdf5e0] font-serif text-2xl font-bold text-[#b8860b]">
-                    {i + 1}
-                  </span>
+                  <div className="mb-4 flex items-center gap-3">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#fdf5e0] text-2xl">
+                      {mod.icon}
+                    </span>
+                    <span className="font-serif text-sm font-bold text-[#b8860b]">
+                      0{i + 1}
+                    </span>
+                  </div>
                   <h3 className="mb-3 font-serif text-xl font-bold">{mod.title}</h3>
                   <p className="text-[0.95rem] leading-relaxed text-[#5a4f42]">{mod.desc}</p>
+                  <div className="mt-4 flex items-center gap-1 text-sm font-medium text-[#b8860b] opacity-0 transition-opacity group-hover:opacity-100">
+                    进入模块
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             ))}
@@ -318,7 +356,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* ==================== 底部 CTA ==================== */}
+      {/* 底部 CTA */}
       <section className="bg-[#f5efe4] px-6 py-24 text-center">
         <div className="mx-auto max-w-2xl">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#b8860b]">
@@ -333,29 +371,14 @@ export default function App() {
             乡音记，不只是翻译工具，更是连接两代人情感的桥梁。
           </p>
           <button
-            onClick={handleTriggerMemory}
+            onClick={onTrigger}
             disabled={isTriggering}
-            className="rounded-xl bg-[#b8860b] px-8 py-4 text-base font-semibold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-[#9a7309] hover:shadow-xl disabled:opacity-60 disabled:cursor-wait"
+            className="rounded-xl bg-[#b8860b] px-8 py-4 text-base font-semibold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-[#9a7309] hover:shadow-xl disabled:opacity-60 disabled:cursor-wait active:scale-95"
           >
             {isTriggering ? '播放中…' : '聆听乡音'}
           </button>
         </div>
       </section>
-
-        </>} />
-        <Route path="/dialect" element={<DialectPage />} />
-        <Route path="/memory" element={<MemoryPage />} />
-        <Route path="/friends" element={<FriendsPage />} />
-        <Route path="/health" element={<HealthPage />} />
-      </Routes>
-
-      {/* ==================== 底部 ==================== */}
-      <footer className="bg-[#2d2418] py-8 text-center text-sm text-[#8a7f72]">
-        <p>乡音记 · 老地方遇故人 &copy; 2026</p>
-      </footer>
-
-      {/* ==================== 音频元素 ==================== */}
-      <audio ref={audioRef} src="/assets/radio-voice.mp3" preload="auto" />
-    </div>
+    </>
   )
 }
