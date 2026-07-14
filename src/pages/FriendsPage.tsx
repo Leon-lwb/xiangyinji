@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { matchResults, verifyQuestions, reunionMessages } from '../data'
 import type { ReunionMessage } from '../data'
+import { useStaggerReveal, useScrollReveal } from '../utils/animations'
+import { animate, stagger } from 'animejs'
 
 const STEPS = ['输入记忆', 'AI匹配', '身份核验', '建立联系']
 const PRESET_REPLIES = ['是啊，那时候的日子真让人怀念。', '你还记得那条白杨树大街吗？', '改天咱们老地方见个面吧。']
@@ -15,10 +17,31 @@ export default function FriendsPage() {
   const [chatInput, setChatInput] = useState('')
   const [typing, setTyping] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
+  const particleRef = useRef<HTMLDivElement>(null)
+  const matchResultsRef = useStaggerReveal<HTMLDivElement>('.match-card', 150)
+  const stepCardRef = useScrollReveal<HTMLDivElement>({ y: 20 })
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages, typing])
+
+  /* 匹配完成时触发粒子效果 */
+  useEffect(() => {
+    if (step === 2 && !matching && particleRef.current) {
+      const particles = particleRef.current.querySelectorAll('.particle')
+      if (particles.length > 0) {
+        animate(particles, {
+          opacity: [0, 1, 0],
+          scale: [0, 1.5, 0],
+          translateX: () => `${(Math.random() - 0.5) * 200}`,
+          translateY: () => `${(Math.random() - 0.5) * 200}`,
+          duration: 1500,
+          delay: stagger(50),
+          ease: 'out(3)',
+        })
+      }
+    }
+  }, [step, matching])
 
   const handleStartSearch = useCallback(() => {
     if (!formData.nickname && !formData.place) return
@@ -86,7 +109,7 @@ export default function FriendsPage() {
         </div>
 
         {/* Step Content */}
-        <div className="card-hover rounded-2xl border border-[#e8e2d8] bg-white p-6 shadow-sm">
+        <div ref={stepCardRef} className="card-hover rounded-2xl border border-[#e8e2d8] bg-white p-6 shadow-sm opacity-0">
           {step === 1 && (
             <div className="space-y-4">
               <div>
@@ -150,13 +173,23 @@ export default function FriendsPage() {
                 </div>
               ) : (
                 <>
+                  {/* 粒子效果容器 */}
+                  <div ref={particleRef} className="pointer-events-none relative mb-4 flex justify-center">
+                    {[...Array(20)].map((_, i) => (
+                      <span
+                        key={i}
+                        className="particle absolute h-2 w-2 rounded-full bg-[#b8860b]"
+                        style={{ opacity: 0 }}
+                      />
+                    ))}
+                  </div>
                   <h3 className="mb-4 font-serif text-xl font-bold text-[#2d2418]">找到 {matchResults.length} 位可能的老友</h3>
-                  <div className="space-y-3">
+                  <div ref={matchResultsRef} className="space-y-3">
                     {matchResults.map((m) => (
                       <div
                         key={m.id}
                         onClick={() => handleSelectMatch(m.id)}
-                        className={`cursor-pointer rounded-xl border-2 p-4 transition-all hover:shadow-md ${
+                        className={`match-card cursor-pointer rounded-xl border-2 p-4 opacity-0 transition-all hover:shadow-md ${
                           selectedMatch === m.id ? 'border-[#b8860b] bg-[#fdf5e0]' : 'border-[#e8e2d8]'
                         }`}
                       >

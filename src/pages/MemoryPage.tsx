@@ -3,6 +3,7 @@ import { memoryPhotos, memoryTimeline } from '../data'
 import type { MemoryPhoto } from '../data'
 import { speak } from '../utils/speech'
 import { useStaggerReveal } from '../utils/animations'
+import { loadAMap, getAMap } from '../utils/amap'
 
 /* ============================================
    今昔对比滑块组件
@@ -52,7 +53,6 @@ function ComparisonSlider({ photo }: { photo: MemoryPhoto }) {
         onMouseDown={(e) => { isDragging.current = true; handleMove(e.clientX) }}
         onTouchStart={(e) => { isDragging.current = true; if (e.touches[0]) handleMove(e.touches[0].clientX) }}
       >
-        {/* 底层：今（彩色） */}
         <img
           src={photo.image}
           alt={`${photo.title} - 今`}
@@ -61,7 +61,6 @@ function ComparisonSlider({ photo }: { photo: MemoryPhoto }) {
         />
         <span className="absolute bottom-3 right-3 rounded bg-black/60 px-2 py-1 text-xs font-medium text-white">今 · {photo.newDesc}</span>
 
-        {/* 上层：昔（怀旧滤镜），用 clip-path 控制显示区域 */}
         <div
           className="absolute inset-0 overflow-hidden"
           style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
@@ -76,7 +75,6 @@ function ComparisonSlider({ photo }: { photo: MemoryPhoto }) {
           <span className="absolute bottom-3 left-3 rounded bg-black/60 px-2 py-1 text-xs font-medium text-amber-200">昔 · {photo.oldDesc}</span>
         </div>
 
-        {/* 滑块分割线 */}
         <div
           className="absolute top-0 bottom-0 z-10 flex items-center justify-center"
           style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
@@ -93,9 +91,95 @@ function ComparisonSlider({ photo }: { photo: MemoryPhoto }) {
   )
 }
 
+/* ============================================
+   高德地图组件
+   ============================================ */
+function AMapView({ onMarkerClick }: { onMarkerClick: (photo: MemoryPhoto) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [mapError, setMapError] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  // 记忆照片的经纬度坐标（北京区域近似坐标）
+  const photoCoords: Record<number, [number, number]> = {
+    1: [116.22, 39.91],  // 石景山
+    2: [116.37, 39.93],  // 西城
+    3: [116.46, 39.95],  // 朝阳
+    4: [116.31, 39.98],  // 海淀
+    5: [116.29, 39.85],  // 丰台
+  }
+
+  useEffect(() => {
+    let cancelled = false
+
+    loadAMap()
+      .then(() => {
+        if (cancelled || !containerRef.current) return
+        const AMap = getAMap()
+        if (!AMap) { setMapError(true); setLoading(false); return }
+
+        const MapClass = AMap.Map as new (el: HTMLElement, opts: Record<string, unknown>) => {
+          setFitView: () => void
+        }
+        const map = new MapClass(containerRef.current, {
+          zoom: 11,
+          center: [116.35, 39.92],
+          mapStyle: 'amap://styles/whitesmoke',
+          viewMode: '2D',
+        })
+
+        // 添加标记
+        memoryPhotos.forEach((photo) => {
+          const coord = photoCoords[photo.id]
+          if (!coord) return
+          const MarkerClass = AMap.Marker as new (opts: Record<string, unknown>) => {
+            on: (event: string, cb: () => void) => void
+          }
+          const marker = new MarkerClass({
+            position: coord,
+            title: photo.title,
+            label: {
+              content: `<div style="background:#b8860b;color:#fff;padding:2px 8px;border-radius:50%;font-size:12px;font-weight:bold;">${photo.id}</div>`,
+              direction: 'center',
+            },
+          })
+          marker.on('click', () => onMarkerClick(photo))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ;(map as any).add(marker)
+        })
+
+        map.setFitView()
+        setLoading(false)
+      })
+      .catch(() => {
+        if (!cancelled) { setMapError(true); setLoading(false) }
+      })
+
+    return () => { cancelled = true }
+  }, [onMarkerClick])
+
+  if (mapError) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-[#fdfbf6] text-[#8a7f72]">
+        <p className="text-sm">地图加载失败，请切换至演示模式</p>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {loading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#fdfbf6]">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#fdf5e0] border-t-[#b8860b]" />
+        </div>
+      )}
+      <div ref={containerRef} className="h-full w-full" />
+    </>
+  )
+}
+
 export default function MemoryPage() {
   const [selectedPhoto, setSelectedPhoto] = useState<MemoryPhoto | null>(null)
-  const [detailRef] = useState({ current: null as HTMLDivElement | null })
+  const [mapMode, setMapMode] = useState<'demo' | 'real'>('demo')
   const detailAreaRef = useRef<HTMLDivElement>(null)
   const timelineRef = useStaggerReveal<HTMLDivElement>('.timeline-item', 100)
 
@@ -120,43 +204,57 @@ export default function MemoryPage() {
       </div>
       <div className="mx-auto max-w-5xl px-4 py-8">
 
-        {/* SVG Map */}
+        {/* 地图模式切换 */}
+        <div className="mb-4 flex justify-center">
+          <div className="flex gap-1.5 rounded-full bg-[#efe7d6] p-1.5">
+            <button
+              onClick={() => setMapMode('demo')}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${mapMode === 'demo' ? 'bg-[#b8860b] text-white shadow-md' : 'text-[#5a4f42] hover:text-[#2d2418]'}`}
+            >
+              演示地图
+            </button>
+            <button
+              onClick={() => setMapMode('real')}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${mapMode === 'real' ? 'bg-[#b8860b] text-white shadow-md' : 'text-[#5a4f42] hover:text-[#2d2418]'}`}
+            >
+              实战地图
+            </button>
+          </div>
+        </div>
+
+        {/* Map Container */}
         <div className="card-hover mb-8 overflow-hidden rounded-2xl border border-[#e8e2d8] bg-white shadow-sm">
           <div className="relative w-full" style={{ aspectRatio: '8/5' }}>
-            <svg viewBox="0 0 800 500" className="absolute inset-0 h-full w-full">
-              {/* Background */}
-              <rect width="800" height="500" fill="#fdfbf6" />
-              {/* Grid */}
-              {[...Array(11)].map((_, i) => (
-                <line key={`v${i}`} x1={i * 80} y1="0" x2={i * 80} y2="500" stroke="#f0ebe2" strokeWidth="1" />
-              ))}
-              {[...Array(7)].map((_, i) => (
-                <line key={`h${i}`} x1="0" y1={i * 80} x2="800" y2={i * 80} stroke="#f0ebe2" strokeWidth="1" />
-              ))}
-              {/* River */}
-              <path d="M 0 350 Q 200 320 400 340 T 800 310" stroke="#a0c4d8" strokeWidth="20" fill="none" opacity="0.6" />
-              {/* Roads */}
-              <line x1="400" y1="0" x2="400" y2="500" stroke="#d4c5a9" strokeWidth="8" />
-              <line x1="0" y1="250" x2="800" y2="250" stroke="#d4c5a9" strokeWidth="8" />
-              {/* Buildings */}
-              <rect x="180" y="120" width="60" height="40" fill="#8b7355" rx="4" />
-              <rect x="420" y="180" width="50" height="35" fill="#8b7355" rx="4" />
-              <rect x="520" y="340" width="55" height="38" fill="#8b7355" rx="4" />
-              <rect x="280" y="400" width="50" height="35" fill="#8b7355" rx="4" />
-              <rect x="620" y="160" width="50" height="35" fill="#8b7355" rx="4" />
-              {/* Trees */}
-              <circle cx="160" cy="200" r="8" fill="#5b8c5a" opacity="0.6" />
-              <circle cx="500" cy="280" r="8" fill="#5b8c5a" opacity="0.6" />
-              <circle cx="300" cy="320" r="8" fill="#5b8c5a" opacity="0.6" />
-              <circle cx="650" cy="380" r="8" fill="#5b8c5a" opacity="0.6" />
-              {/* Title */}
-              <text x="400" y="30" textAnchor="middle" fontSize="16" fill="#8a7f72" fontFamily="serif">岁月地图</text>
-              {/* Compass */}
-              <text x="750" y="470" textAnchor="middle" fontSize="14" fill="#b8860b">N ↑</text>
-            </svg>
+            {mapMode === 'demo' ? (
+              <svg viewBox="0 0 800 500" className="absolute inset-0 h-full w-full">
+                <rect width="800" height="500" fill="#fdfbf6" />
+                {[...Array(11)].map((_, i) => (
+                  <line key={`v${i}`} x1={i * 80} y1="0" x2={i * 80} y2="500" stroke="#f0ebe2" strokeWidth="1" />
+                ))}
+                {[...Array(7)].map((_, i) => (
+                  <line key={`h${i}`} x1="0" y1={i * 80} x2="800" y2={i * 80} stroke="#f0ebe2" strokeWidth="1" />
+                ))}
+                <path d="M 0 350 Q 200 320 400 340 T 800 310" stroke="#a0c4d8" strokeWidth="20" fill="none" opacity="0.6" />
+                <line x1="400" y1="0" x2="400" y2="500" stroke="#d4c5a9" strokeWidth="8" />
+                <line x1="0" y1="250" x2="800" y2="250" stroke="#d4c5a9" strokeWidth="8" />
+                <rect x="180" y="120" width="60" height="40" fill="#8b7355" rx="4" />
+                <rect x="420" y="180" width="50" height="35" fill="#8b7355" rx="4" />
+                <rect x="520" y="340" width="55" height="38" fill="#8b7355" rx="4" />
+                <rect x="280" y="400" width="50" height="35" fill="#8b7355" rx="4" />
+                <rect x="620" y="160" width="50" height="35" fill="#8b7355" rx="4" />
+                <circle cx="160" cy="200" r="8" fill="#5b8c5a" opacity="0.6" />
+                <circle cx="500" cy="280" r="8" fill="#5b8c5a" opacity="0.6" />
+                <circle cx="300" cy="320" r="8" fill="#5b8c5a" opacity="0.6" />
+                <circle cx="650" cy="380" r="8" fill="#5b8c5a" opacity="0.6" />
+                <text x="400" y="30" textAnchor="middle" fontSize="16" fill="#8a7f72" fontFamily="serif">岁月地图</text>
+                <text x="750" y="470" textAnchor="middle" fontSize="14" fill="#b8860b">N ↑</text>
+              </svg>
+            ) : (
+              <AMapView onMarkerClick={handleSelectPhoto} />
+            )}
 
-            {/* Photo Markers */}
-            {memoryPhotos.map((photo) => (
+            {/* Photo Markers (only demo mode) */}
+            {mapMode === 'demo' && memoryPhotos.map((photo) => (
               <button
                 key={photo.id}
                 onClick={() => handleSelectPhoto(photo)}

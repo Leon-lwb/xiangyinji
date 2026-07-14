@@ -131,6 +131,22 @@ html, body {
   animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* 小测题目切换滑入动画 */
+@keyframes quiz-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.quiz-slide-in {
+  animation: quiz-slide-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* ============================================
    滚动提示箭头脉冲
    ============================================ */

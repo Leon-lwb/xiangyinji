@@ -24,6 +24,8 @@ import {
   translateMandarinToDialect,
 } from '../utils/translate'
 import type { TranslateResult } from '../utils/translate'
+import { useStaggerReveal, useScrollReveal } from '../utils/animations'
+import { animate, stagger } from 'animejs'
 
 type Direction = 'old2young' | 'young2old'
 
@@ -81,6 +83,22 @@ export default function DialectPage() {
 
   const recognitionRef = useRef<SpeechRecognitionController | null>(null)
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const resultRef = useRef<HTMLDivElement>(null)
+  const dictRef = useStaggerReveal<HTMLDivElement>('.dict-row', 40)
+  const historyRef = useScrollReveal<HTMLDivElement>({ y: 20 })
+
+  /* 翻译结果出现时的动画 */
+  useEffect(() => {
+    if (result && resultRef.current) {
+      animate(resultRef.current, {
+        opacity: [0, 1],
+        translateY: [20, 0],
+        scale: [0.97, 1],
+        duration: 600,
+        ease: 'out(3)',
+      })
+    }
+  }, [result])
 
   /* -------------------- 清理副作用 -------------------- */
   useEffect(() => {
@@ -350,7 +368,7 @@ export default function DialectPage() {
 
         {/* ========== 翻译结果卡片 ========== */}
         {result && (
-          <section className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.12)]">
+          <section ref={resultRef} className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.12)]">
             {/* 原文 */}
             <div className="mb-3">
               <p className="text-xs text-[#9a8f7e]">原文（{sourceLabel}）</p>
@@ -398,7 +416,7 @@ export default function DialectPage() {
         )}
 
         {/* ========== 对话历史（左右气泡） ========== */}
-        <section className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
+        <section ref={historyRef} className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)] opacity-0">
           <h2 className="mb-4 text-lg font-semibold">对话历史</h2>
           <div className="flex max-h-[420px] flex-col gap-4 overflow-y-auto pr-1">
             {history.map((c) => {
@@ -462,7 +480,7 @@ export default function DialectPage() {
             placeholder="搜索方言词 / 普通话 / 地区…"
             className="mb-4 min-h-[48px] w-full rounded-xl border border-[#e8e2d8] bg-[#faf7f0] px-4 py-3 text-base outline-none focus:border-[#b8860b]"
           />
-          <div className="flex flex-col divide-y divide-[#f0ebe2]">
+          <div ref={dictRef} className="flex flex-col divide-y divide-[#f0ebe2]">
             {filteredDict.length === 0 ? (
               <p className="py-6 text-center text-base text-[#9a8f7e]">
                 没有找到相关词条
@@ -471,7 +489,7 @@ export default function DialectPage() {
               filteredDict.map((d, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 py-3 text-base"
+                  className="dict-row flex items-center gap-3 py-3 text-base opacity-0"
                 >
                   <span className="min-w-[4.5em] font-semibold text-[#b8860b]">
                     {d.dialect}

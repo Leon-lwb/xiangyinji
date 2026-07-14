@@ -9,7 +9,7 @@
  * 3. 健康提醒列表：按 level(warning/info/success) 渲染卡片
  * 4. 邻里互助看护板：帖子列表，已完成显示"已处理"，未完成显示"我来帮忙"按钮
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   cognitiveQuiz,
   healthAlerts,
@@ -18,6 +18,7 @@ import {
 } from '../data'
 import type { HealthAlertLevel, NeighborHelp } from '../data'
 import { speak } from '../utils/speech'
+import { useStaggerReveal, useScrollReveal } from '../utils/animations'
 
 /* 小测阶段 */
 type QuizPhase = 'intro' | 'memory' | 'quiz' | 'result'
@@ -374,7 +375,7 @@ function CognitiveQuiz() {
 
   /* ---- 选择题（第 2-5 题） ---- */
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
+    <div key={qIndex} className="quiz-slide-in rounded-2xl bg-white p-6 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
       <div className="mb-3 flex items-center justify-between">
         <span className="text-sm text-[#b8860b]">
           第 {current.id} 题 · 共 5 题
@@ -476,6 +477,9 @@ function CognitiveQuiz() {
    ============================================ */
 export default function HealthPage() {
   const [helps, setHelps] = useState<NeighborHelp[]>(neighborHelps)
+  const alertsRef = useStaggerReveal<HTMLDivElement>('.alert-item', 100)
+  const helpsRef = useStaggerReveal<HTMLDivElement>('.help-item', 100)
+  const trendRef = useScrollReveal<HTMLDivElement>({ y: 20 })
 
   const handleHelp = (id: number) => {
     setHelps((prev) =>
@@ -504,7 +508,7 @@ export default function HealthPage() {
       <div className="mx-auto max-w-3xl px-4 py-8">
 
         {/* ========== 本周认知趋势图 ========== */}
-        <section className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
+        <section ref={trendRef} className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)] opacity-0">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-lg font-semibold">本周认知趋势</h2>
             <span className="rounded-full bg-[#fdf5e0] px-3 py-1 text-sm font-medium text-[#b8860b]">
@@ -525,13 +529,13 @@ export default function HealthPage() {
         {/* ========== 健康提醒列表 ========== */}
         <section className="card-hover mb-6 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
           <h2 className="mb-4 text-lg font-semibold">健康提醒</h2>
-          <div className="flex flex-col gap-3">
+          <div ref={alertsRef} className="flex flex-col gap-3">
             {healthAlerts.map((alert) => {
               const s = ALERT_STYLES[alert.level]
               return (
                 <div
                   key={alert.id}
-                  className={`flex items-start gap-3 rounded-xl border ${s.border} ${s.bg} p-4`}
+                  className={`alert-item flex items-start gap-3 rounded-xl border ${s.border} ${s.bg} p-4 opacity-0`}
                 >
                   <span
                     className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold ${s.accent}`}
@@ -563,11 +567,11 @@ export default function HealthPage() {
         {/* ========== 邻里互助看护板 ========== */}
         <section className="card-hover mb-10 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(184,134,11,0.10)]">
           <h2 className="mb-4 text-lg font-semibold">邻里互助看护板</h2>
-          <div className="flex flex-col gap-3">
+          <div ref={helpsRef} className="flex flex-col gap-3">
             {helps.map((h) => (
               <div
                 key={h.id}
-                className="rounded-xl border border-[#f0ebe2] bg-[#fcfaf4] p-4"
+                className="help-item rounded-xl border border-[#f0ebe2] bg-[#fcfaf4] p-4 opacity-0"
               >
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="text-base font-semibold text-[#2d2418]">
